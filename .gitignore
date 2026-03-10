@@ -1,0 +1,28 @@
+﻿# Dependencies
+node_modules/
+flink-1.18.1/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Environment
+.env
+.env.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+.dockerignore
+
+# Build outputs
+dist/
+build/

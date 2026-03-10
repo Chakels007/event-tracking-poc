@@ -1,0 +1,67 @@
+version: '3.8'
+
+services:
+  kafka:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: kafka-poc
+    ports:
+      - "9092:9092"
+    environment:
+      CLUSTER_ID: MkQkSWIFT0OMIk2d4XxOSQ
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+    volumes:
+      - kafka_data:/tmp/kraft-combined-logs
+
+  flink-jobmanager:
+    image: pyflink-poc:latest
+    build:
+      context: ./flink-job
+    container_name: flink-jm
+    depends_on:
+      - kafka
+    ports:
+      - "8081:8081"           # Flink UI
+    environment:
+      - |
+        FLINK_PROPERTIES=
+        jobmanager.rpc.address: flink-jm
+    command: jobmanager
+
+  flink-taskmanager:
+    image: pyflink-poc:latest
+    build:
+      context: ./flink-job
+    container_name: flink-tm
+    depends_on:
+      - flink-jobmanager
+    environment:
+      - |
+        FLINK_PROPERTIES=
+        jobmanager.rpc.address: flink-jm
+        taskmanager.numberOfTaskSlots: 2
+    command: taskmanager
+
+  producer:
+    image: node:20-alpine
+    container_name: producer
+    working_dir: /app
+    volumes:
+      - ./producer:/app
+    environment:
+      KAFKA_BROKERS: kafka:9092
+    command: ["sh", "-c", "npm install && npm start"]
+    ports:
+      - "3000:3000"
+    depends_on:
+      - kafka
+
+volumes:
+  kafka_data:
